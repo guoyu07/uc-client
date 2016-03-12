@@ -1,0 +1,25 @@
+{
+    "name": "vergil/uc-api",
+    "require": {
+        "guzzlehttp/guzzle": "~5.3|~6.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Vergil",
+            "email": "vergil@vip.163.com",
+            "homepage": "http://vergil.cn"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "VergilLai\\UcClient\\": "src/"
+        },
+        "files":[
+            "uc_client/client.php"
+        ]
+    }
+}
