@@ -18,13 +18,9 @@
     "autoload": {
         "psr-4": {
             "VergilLai\\UcClient\\": "src/"
-<<<<<<< HEAD
         },
         "files": [
             "src/lib/xml.class.php"
         ]
-=======
-        }
->>>>>>> 87ebeaa0a56d3b7371e43504e044a354567ef888
     }
 }
