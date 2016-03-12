@@ -1,5 +1,5 @@
 {
-    "name": "vergil/uc-api",
+    "name": "vergil/uc-client",
     "require": {
         "guzzlehttp/guzzle": "~5.3|~6.0"
     },
