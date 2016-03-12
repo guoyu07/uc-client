@@ -3,6 +3,7 @@
 namespace VergilLai\UcClient;
 
 use Config;
+<<<<<<< HEAD
 use Request;
 use Validator;
 use VergilLai\UcClient\Exceptions\UcException;
@@ -25,6 +26,11 @@ class Client
      */
     protected $config;
 
+=======
+
+class Client
+{
+>>>>>>> 87ebeaa0a56d3b7371e43504e044a354567ef888
 
     public function __construct()
     {
@@ -44,6 +50,7 @@ class Client
             define('UC_IP', $config['ip']);
             define('UC_APPID', $config['appid']);
             define('UC_PPP', $config['ppp']);
+<<<<<<< HEAD
 
             require __DIR__ . '/../uc_client/client.php';
         }
@@ -189,6 +196,23 @@ class Client
         $return = $this->apiPost('user', 'login', $params);
         var_dump(xml_unserialize($return));
 
+=======
+        }
+    }
+
+    public function __call($function, $arguments)
+    {
+        if (function_exists($function)) {
+            return call_user_func_array($function, $arguments);
+        } else {
+            throw new \RuntimeException("UcClient Method Not Found.");
+        }
+    }
+
+    public function test()
+    {
+        echo __METHOD__;
+>>>>>>> 87ebeaa0a56d3b7371e43504e044a354567ef888
     }
 
 
