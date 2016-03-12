@@ -17,9 +17,6 @@
     "autoload": {
         "psr-4": {
             "VergilLai\\UcClient\\": "src/"
-        },
-        "files":[
-            "uc_client/client.php"
-        ]
+        }
     }
 }
