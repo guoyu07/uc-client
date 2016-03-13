@@ -54,7 +54,12 @@ class Client
 
         $url = Config::get('ucenter.api').'/index.php';
         return $this->call($url, 500000, $postdata, '', true, Config::get('ucenter.ip'), 20);
+    }
 
+    protected function apiUrl($module, $action, $arg='', $extra='')
+    {
+        $url = Config::get('ucenter.api').'/index.php?'. $this->apiRequestData($module, $action, $arg, $extra);
+        return $url;
     }
 
     protected function apiRequestData($module, $action, $arg = '', $extra = [])
@@ -523,4 +528,110 @@ class Client
         $response = $this->apiPost('user', 'getcredit', compact('appid', 'uid', 'credit'));
         return (int)$response;
     }
+
+    public function pmLocation($uid, $newpm = 0)
+    {
+        uc_pm_location($uid, $newpm);
+    }
+
+    /**
+     * 修改头像
+     * 本接口函数用于返回设置用户头像的 HTML 代码，HTML 会输出一个 Flash
+     *
+     * @param int $uid              用户 ID
+     * @param string $type          头像类型
+     *                                  real:真实头像
+     *                                  virtual:(默认值) 虚拟头像
+     * @param boolean $returnhtml   是否返回 HTML 代码
+     *                                  true: (默认值) 是，返回设置头像的 HTML 代码
+     *                                  false: 否，返回设置头像的 Flash 调用数组
+     * @return array|string
+     *      string:返回设置头像的 HTML 代码
+     *      array:返回设置头像的 Flash 调用数组
+     */
+    public function avatar($uid, $type = 'virtual', $returnhtml = true)
+    {
+        $uid = intval($uid);
+        $uc_input = uc_api_input("uid=$uid");
+        $uc_avatarflash = Config::get('ucenter.api') . '/images/camera.swf?inajax=1&appid=' . Config::get('ucenter.appid') .
+            '&input=' . $uc_input . '&agent=' . md5($_SERVER['HTTP_USER_AGENT']) . '&ucapi=' .
+            urlencode(str_replace('http://', '', Config::get('ucenter.api'))) . '&avatartype=' . $type . '&uploadSize=2048';
+        if ($returnhtml) {
+            return '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=9,0,0,0" width="450" height="253" id="mycamera" align="middle">
+                <param name="allowScriptAccess" value="always" />
+                <param name="scale" value="exactfit" />
+                <param name="wmode" value="transparent" />
+                <param name="quality" value="high" />
+                <param name="bgcolor" value="#ffffff" />
+                <param name="movie" value="'.$uc_avatarflash.'" />
+                <param name="menu" value="false" />
+                <embed src="'.$uc_avatarflash.'" quality="high" bgcolor="#ffffff" width="450" height="253" name="mycamera" align="middle" allowScriptAccess="always" allowFullScreen="false" scale="exactfit"  wmode="transparent" type="application/x-shockwave-flash" pluginspage="http://www.macromedia.com/go/getflashplayer" />
+            </object>';
+        } else {
+            return array(
+                'width' => '450',
+                'height' => '253',
+                'scale' => 'exactfit',
+                'src' => $uc_avatarflash,
+                'id' => 'mycamera',
+                'name' => 'mycamera',
+                'quality' => 'high',
+                'bgcolor' => '#ffffff',
+                'menu' => 'false',
+                'swLiveConnect' => 'true',
+                'allowScriptAccess' => 'always'
+            );
+        }
+    }
+
+    /**
+     * 获取用户头像图片url
+     *
+     * @param int $uid      用户ID
+     * @param string $size  尺寸
+     *                          big: 200 x 250
+     *                          middle: 120 x 120
+     *                          small: 48 x 48
+     * @param string $type  头像类型
+     *                          real:真实头像
+     *                          virtual:(默认值) 虚拟头像
+     * @return string
+     */
+    public function getAvatar($uid, $size = 'big', $type = 'virtual')
+    {
+        $size = in_array(strtolower($size), ['big', 'middle', 'small']) ? strtolower($size) : 'big';
+        $type = in_array(strtolower($type), ['real', 'virtual']) ? strtolower($type) : 'virtual';
+        return Config::get('ucenter.api') . sprintf("/avatar.php?uid=%d&type=%ss&size=%s", $uid, $type, $size);
+    }
+
+    /**
+     * 检测头像是否存在
+     * @param int $uid      用户ID
+     * @param string $size  尺寸
+     *                          big: 200 x 250
+     *                          middle: 120 x 120
+     *                          small: 48 x 48
+     * @param string $type  头像类型
+     *                          real:真实头像
+     *                          virtual:(默认值) 虚拟头像
+     * @return boolean
+     */
+    public function checkAvatar($uid, $size = 'middle', $type = 'virtual')
+    {
+        $url = Config::get('ucenter.api') . '/avatar.php';
+        $query = [
+            'uid' => (int)$uid,
+            'size' => in_array(strtolower($size), ['big', 'middle', 'small']) ? strtolower($size) : 'big',
+            'type' => in_array(strtolower($type), ['real', 'virtual']) ? strtolower($type) : 'virtual',
+            'check_file_exists' => 1,
+        ];
+
+        $client = new \GuzzleHttp\Client([]);
+        $response = $client->request('GET', $url, [
+            'query' => $query
+        ]);
+        return $response->getBody()->getContents() == '1';
+
+    }
+
 }
