@@ -293,12 +293,146 @@ class Client
 
     /**
      * 删除用户
-     * @param int $uid
+     * @param int|array $uid
      * @return boolean
      */
     public function userDelete($uid)
     {
-        $response = $this->apiPost('user', 'delete', ['uid' => (int)$uid]);
+        $response = $this->apiPost('user', 'delete', ['uid' => $uid]);
         return (boolean)$response;
     }
+
+    /**
+     * 删除用户头像
+     * @param int|array $uid    用户名
+     * @return void
+     */
+    public function userDeleteAvatar($uid)
+    {
+        $this->apiPost('user', 'deleteavatar', ['uid' => $uid]);
+    }
+
+    /**
+     * 同步登录
+     * @param int $uid
+     * @return string 同步登录的 HTML 代码
+     */
+    public function userSyncLogin($uid)
+    {
+        return $this->apiPost('user', 'synlogin', ['uid' => intval($uid)]);
+    }
+
+    /**
+     * 同步退出
+     * @return string 同步退出的 HTML 代码
+     */
+    public function userSyncLogout()
+    {
+        return $this->apiPost('user', 'synlogout');
+    }
+
+    /**
+     * 检查 Email 地址
+     * @param string $email Email
+     * @return boolean
+     */
+    public function userCheckEmail($email)
+    {
+        $params = compact('email');
+        $validator = Validator::make($params, [
+            'email' => 'uc_email|email'
+        ]);
+
+        if ($validator->fails())
+            throw new UcException('Email 格式有误', -4);
+
+        $response = $this->apiPost('user', 'check_email', $params);
+        if (0 > $response) {
+            switch ($response) {
+                case '-4':
+                    throw new UcException('Email 格式有误', -4);
+                    break;
+                case '-5':
+                    throw new UcException('Email 不允许注册', -5);
+                    break;
+                case '-6':
+                    throw new UcException('该 Email 已经被注册', -6);
+                    break;
+                default:
+                    throw new UcException('未知错误', $response);
+                    break;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 检查用户名
+     * @param string $username
+     * @return boolean
+     */
+    public function userCheckName($username)
+    {
+        $params =  compact('username');
+        $validator = Validator::make($params, [
+            'username' => 'uc_username'
+        ]);
+        if ($validator->fails())
+            throw new UcException('用户名不合法', -1);
+
+
+        $response = $this->apiPost('user', 'check_username', $params);
+        if (0 > $response) {
+            switch ($response) {
+                case '-1':
+                    throw new UcException('用户名不合法', -1);
+                    break;
+                case '-2':
+                    throw new UcException('包含要允许注册的词语', -2);
+                    break;
+                case '-3':
+                    throw new UcException('用户名已经存在', -3);
+                    break;
+                default:
+                    throw new UcException('未知错误', $response);
+                    break;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 添加保护用户
+     * @param string|array $username 保护用户名
+     * @param string $admin 操作的管理员
+     * @return boolean
+     */
+    public function userAddProtected($username, $admin = '')
+    {
+        $response = $this->apiPost('user', 'addprotected', compact('username', 'admin'));
+        return $response == '1';
+    }
+
+    /**
+     * 删除保护用户
+     * @param string $username 保护用户名
+     * @return boolean
+     */
+    public function userDeleteProtected($username)
+    {
+        $response = $this->apiPost('user', 'deleteprotected', compact('username'));
+        return $response == '1';
+    }
+
+    /**
+     * 得到受保护的用户名列表
+     * @return array
+     */
+    public function userGetProtected()
+    {
+        $response = $this->apiPost('user', 'deleteprotected', ['1' => 1]);
+        return xml_unserialize($response);
+    }
+
+
 }
