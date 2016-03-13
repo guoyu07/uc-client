@@ -179,15 +179,126 @@ class Client
         return (int)$uid;
     }
 
+    /**
+     * 用户登录
+     *
+     * @param string $username      用户名 / 用户 ID / 用户 E-mail
+     * @param string $password      密码
+     * @param int $isuid            是否使用用户 ID登录
+     *                              1:使用用户 ID登录
+     *                              2:使用用户 E-mail登录
+     *                              0:(默认值) 使用用户名登录
+     * @param int $checkques
+     * @param string $questionid
+     * @param string $answer
+     * @return array
+     */
     public function userLogin($username, $password, $isuid = 0, $checkques = 0, $questionid = '', $answer = '')
     {
         $isuid = intval($isuid);
         $params = compact('username', 'password', 'isuid', 'checkques', 'questionid', 'answer');
 
-        $return = $this->apiPost('user', 'login', $params);
-        var_dump(xml_unserialize($return));
+        $response = $this->apiPost('user', 'login', $params);
+        $response = xml_unserialize($response);
 
+        if (0 > $response[0]) {
+            switch ($response[0]) {
+                case '-1':
+                    throw new UcException('用户不存在，或者被删除', -1);
+                    break;
+                case '-2':
+                    throw new UcException('密码错', -2);
+                    break;
+                case '-3':
+                    throw new UcException('安全提问错', -3);
+                    break;
+                default:
+                    throw new UcException('未知错误', $response[0]);
+                    break;
+            }
+        }
+
+        return array_combine(['uid', 'username', 'password', 'email', 'redeclare'], $response);
     }
 
+    /**
+     * 获取用户数据
+     * @param string $username  用户名
+     * @param int $isuid        是否使用用户 ID获取
+     *                          1:使用用户 ID获取
+     *                          0:(默认值) 使用用户名获取
+     * @return array
+     */
+    public function getUser($username, $isuid = 0)
+    {
+        $params = compact('username', 'isuid');
 
+        $response = xml_unserialize($this->apiPost('user', 'get_user', $params));
+
+        if($response === null)
+            throw new UcException('用户不存在');
+
+        return array_combine(['uid', 'username', 'email'], $response);
+    }
+
+    /**
+     * 更新用户资料
+     * @param string $username      用户名
+     * @param string $oldpw         旧密码
+     * @param string $newpw         新密码，如不修改为空
+     * @param string $email         Email，如不修改为空
+     * @param int $ignoreoldpw      是否忽略旧密码
+     *                              1:忽略，更改资料不需要验证密码
+     *                              0:(默认值) 不忽略，更改资料需要验证密码
+     * @param string $questionid    安全提问索引
+     * @param string $answer        安全提问答案
+     * @return boolean
+     */
+    public function userEdit($username, $oldpw, $newpw, $email, $ignoreoldpw = 0, $questionid = '', $answer = '')
+    {
+        $ignoreoldpw = is_bool($ignoreoldpw) ? boolval($ignoreoldpw) : $ignoreoldpw;
+
+        $params = compact('username', 'oldpw', 'newpw', 'email', 'ignoreoldpw', 'questionid', 'answer');
+        $response = $this->apiPost('user', 'edit', $params);
+
+        if (0 >= $response) {
+            switch ($response) {
+                case '-1':
+                    throw new UcException('旧密码不正确', -1);
+                    break;
+                case '-4':
+                    throw new UcException('Email 格式有误', -4);
+                    break;
+                case '-5':
+                    throw new UcException('Email 不允许注册', -5);
+                    break;
+                case '-6':
+                    throw new UcException('该 Email 已经被注册', -6);
+                    break;
+                case '0':
+                case '-7':
+                    throw new UcException('没有做任何修改', $response);
+                    break;
+                case '-8':
+                    throw new UcException('该用户受保护无权限更改', -8);
+                    break;
+                default:
+                    throw new UcException('未知错误', $response);
+                    break;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 删除用户
+     * @param int $uid
+     * @return boolean
+     */
+    public function userDelete($uid)
+    {
+        $response = $this->apiPost('user', 'delete', ['uid' => (int)$uid]);
+        return (boolean)$response;
+    }
 }
