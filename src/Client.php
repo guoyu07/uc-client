@@ -7,6 +7,12 @@ use Request;
 use Validator;
 use VergilLai\UcClient\Exceptions\UcException;
 
+/**
+ * Class Client
+ *
+ * @author Vergil <vergil@vip.163.com>
+ * @package VergilLai\UcClient
+ */
 class Client
 {
     const UC_CLIENT_RELEASE = '20081031';
@@ -27,24 +33,12 @@ class Client
 
     public function __construct()
     {
-        if (!defined('UC_API')) {
-            $config = Config::get('ucenter');
-            define('UC_CONNECT', $config['connect']);
-            define('UC_DBHOST', $config['dbhost']);
-            define('UC_DBUSER', $config['dbuser']);
-            define('UC_DBPW', $config['dbpw']);
-            define('UC_DBNAME', $config['dbname']);
-            define('UC_DBCONNECT', $config['dbconnect']);
-            define('UC_DBCHARSET', $config['dbcharset']);
-            define('UC_DBTABLEPRE', $config['dbtablepre']);
-            define('UC_KEY', $config['key']);
-            define('UC_API', $config['api']);
-            define('UC_CHARSET', $config['charset']);
-            define('UC_IP', $config['ip']);
-            define('UC_APPID', $config['appid']);
-            define('UC_PPP', $config['ppp']);
-            require __DIR__ . '/../uc_client/client.php';
-        }
+        //卧槽，在解析XML的时候，为啥它原生客户端不会报错呢？我的却报xml.class.php line 69 Undefined offset: 0？
+        //排查发现，原来它client.php第14行，把错误屏蔽了，哎，暂时这么做吧。
+        error_reporting(0);
+
+
+        $this->config = Config::get('ucenter');
     }
 
     protected function apiPost($module, $action, $arg = [])
@@ -52,13 +46,13 @@ class Client
         $query = http_build_query($arg);
         $postdata = $this->apiRequestData($module, $action, $query);
 
-        $url = Config::get('ucenter.api').'/index.php';
-        return $this->call($url, 500000, $postdata, '', true, Config::get('ucenter.ip'), 20);
+        $url = $this->config['api'] . '/index.php';
+        return $this->call($url, $postdata, '', 20);
     }
 
     protected function apiUrl($module, $action, $arg='', $extra='')
     {
-        $url = Config::get('ucenter.api').'/index.php?'. $this->apiRequestData($module, $action, $arg, $extra);
+        $url =  $this->config['api'] . '/index.php?'. $this->apiRequestData($module, $action, $arg, $extra);
         return $url;
     }
 
@@ -72,7 +66,7 @@ class Client
             'inajax' => 2,
             'release' => self::UC_CLIENT_RELEASE,
             'input' => $input,
-            'appid' => Config::get('ucenter.appid'),
+            'appid' => $this->config['appid'],
         ], $extra);
 //        $post .= trim($extra);
 
@@ -81,11 +75,11 @@ class Client
 
     protected function apiInput($data)
     {
-        $s = Helper::authcode($data.'&agent='.md5($_SERVER['HTTP_USER_AGENT'])."&time=".$_SERVER['REQUEST_TIME'], 'ENCODE', Config::get('ucenter.key'));
+        $s = Helper::authcode($data.'&agent='.md5($_SERVER['HTTP_USER_AGENT'])."&time=".$_SERVER['REQUEST_TIME'], 'ENCODE', $this->config['key']);
         return $s;
     }
 
-    protected function call($url, $limit = 0, $post = '', $cookie = '', $bysocket = false, $ip = '', $timeout = 15, $block = true)
+    protected function call($url, $post = '', $cookie = '', $timeout = 15)
     {
         $__times__ = Request::get('__times__', 1);
         if($__times__ > 2) {
@@ -107,7 +101,7 @@ class Client
 
 
         if ($post) {
-            $header['Content-Length'] = strlen($post);
+            $header['Content-Length'] = strlen(http_build_query($post));
             $header['Cache-Control'] = 'no-cache';
 //            $header['Content-Type'] = 'application/x-www-form-urlencoded';
 
@@ -246,7 +240,9 @@ class Client
     {
         $params = compact('username', 'isuid');
 
-        $response = xml_unserialize($this->apiPost('user', 'get_user', $params));
+        $response = $this->apiPost('user', 'get_user', $params);
+//        var_dump($response);exit;
+        $response = xml_unserialize($response);
 
         if($response === null)
             throw new UcException('用户不存在');
@@ -529,11 +525,6 @@ class Client
         return (int)$response;
     }
 
-    public function pmLocation($uid, $newpm = 0)
-    {
-        uc_pm_location($uid, $newpm);
-    }
-
     /**
      * 修改头像
      * 本接口函数用于返回设置用户头像的 HTML 代码，HTML 会输出一个 Flash
@@ -553,9 +544,9 @@ class Client
     {
         $uid = intval($uid);
         $uc_input = uc_api_input("uid=$uid");
-        $uc_avatarflash = Config::get('ucenter.api') . '/images/camera.swf?inajax=1&appid=' . Config::get('ucenter.appid') .
+        $uc_avatarflash = $this->config['api'] . '/images/camera.swf?inajax=1&appid=' . Config::get('ucenter.appid') .
             '&input=' . $uc_input . '&agent=' . md5($_SERVER['HTTP_USER_AGENT']) . '&ucapi=' .
-            urlencode(str_replace('http://', '', Config::get('ucenter.api'))) . '&avatartype=' . $type . '&uploadSize=2048';
+            urlencode(str_replace('http://', '', $this->config['api'])) . '&avatartype=' . $type . '&uploadSize=2048';
         if ($returnhtml) {
             return '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=9,0,0,0" width="450" height="253" id="mycamera" align="middle">
                 <param name="allowScriptAccess" value="always" />
@@ -601,7 +592,7 @@ class Client
     {
         $size = in_array(strtolower($size), ['big', 'middle', 'small']) ? strtolower($size) : 'big';
         $type = in_array(strtolower($type), ['real', 'virtual']) ? strtolower($type) : 'virtual';
-        return Config::get('ucenter.api') . sprintf("/avatar.php?uid=%d&type=%ss&size=%s", $uid, $type, $size);
+        return $this->config['api'] . sprintf("/avatar.php?uid=%d&type=%ss&size=%s", $uid, $type, $size);
     }
 
     /**
@@ -618,7 +609,7 @@ class Client
      */
     public function checkAvatar($uid, $size = 'middle', $type = 'virtual')
     {
-        $url = Config::get('ucenter.api') . '/avatar.php';
+        $url = $this->config['api'] . '/avatar.php';
         $query = [
             'uid' => (int)$uid,
             'size' => in_array(strtolower($size), ['big', 'middle', 'small']) ? strtolower($size) : 'big',
@@ -631,7 +622,6 @@ class Client
             'query' => $query
         ]);
         return $response->getBody()->getContents() == '1';
-
     }
 
 }

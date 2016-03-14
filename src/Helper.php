@@ -4,6 +4,11 @@ namespace VergilLai\UcClient;
 
 use Config;
 
+/**
+ * Class Helper
+ *
+ * @package VergilLai\UcClient
+ */
 class Helper
 {
     public static function authcode($string, $operation = 'DECODE', $key = '', $expiry = 0)

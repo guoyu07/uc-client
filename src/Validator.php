@@ -4,6 +4,12 @@ namespace VergilLai\UcClient;
 
 use Config;
 
+/**
+ * Class Validator
+ *
+ * @author Vergil <vergil@vip.163.com>
+ * @package VergilLai\UcClient
+ */
 class Validator
 {
 
@@ -18,7 +24,7 @@ class Validator
 
     public function emailValidate($attribute, $value, $parameters, $validator)
     {
-        return strlen($email) > 6 && preg_match("/^[\w\-\.]+@[\w\-\.]+(\.\w+)+$/", $email);
+        return strlen($value) > 6 && preg_match("/^[\w\-\.]+@[\w\-\.]+(\.\w+)+$/", $value);
     }
 
 
