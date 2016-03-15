@@ -247,7 +247,7 @@ class Client
         if($response === null)
             throw new UcException('用户不存在');
 
-        return array_combine(['uid', 'username', 'email'], $response);
+        return array_combine(['uid', 'username', 'email'], array_splice($response, 0, 3));
     }
 
     /**
