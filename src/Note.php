@@ -91,7 +91,6 @@ class Note implements UcenterNoteApi
         }
 
         header('P3P: CP="CURa ADMa DEVa PSAo PSDo OUR BUS UNI PUR INT DEM STA PRE COM NAV OTC NOI DSP COR"');
-        _setcookie('Example_auth', _authcode($uid."\t".$username, 'ENCODE'));
 
         setcookie('Example_auth', '', -86400 * 365, $this->config['cookie_path'],
             $this->config['cookie_domain'], Request::server('SERVER_PORT') == 433);
